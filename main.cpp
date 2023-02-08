@@ -6,19 +6,19 @@
 #include <chrono>
 #include <mutex>
 
-std::queue<std::string> namesQueue, addressesQueue;
+std::queue<std::string> Orderbook_queue, Trades_queue;
 std::mutex queueMutex;
 
 void processFiles()
 {
-    std::fstream names("/home/alessio/Desktop/prove/Data/orderbook.csv");
-    std::fstream add("/home/alessio/Desktop/prove/Data/trade_data.csv");
+    std::fstream quotes("/home/alessio/Desktop/prove/Data/orderbook.csv");
+    std::fstream trade("/home/alessio/Desktop/prove/Data/trade_data.csv");
     std::string n, a;
-    while (std::getline(names, n) && std::getline(add, a))
+    while (std::getline(quotes, n) && std::getline(trade, a))
     {
         std::unique_lock<std::mutex> lock(queueMutex);
-        namesQueue.push(n);
-        addressesQueue.push(a);
+        Orderbook_queue.push(n);
+        Trades_queue.push(a);
         lock.unlock();
     }
 }
@@ -29,17 +29,17 @@ void readFromQueues()
     while (true)
     {
         std::unique_lock<std::mutex> lock(queueMutex);
-        if (namesQueue.empty() || addressesQueue.empty())
+        if (Orderbook_queue.empty() || Trades_queue.empty())
         {
             lock.unlock();
             break;
         }
-        std::string name = namesQueue.front();
-        std::string address = addressesQueue.front();
-        namesQueue.pop();
-        addressesQueue.pop();
+        std::string _quote = Orderbook_queue.front();
+        std::string _trade = Trades_queue.front();
+        Orderbook_queue.pop();
+        Trades_queue.pop();
         lock.unlock();
-        std::cout << name << " " << address << std::endl;
+        std::cout << _quote << " " << _trade << std::endl;
     }
 }
 
