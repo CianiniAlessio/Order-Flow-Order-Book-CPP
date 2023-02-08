@@ -145,6 +145,10 @@ int main()
     std::this_thread::sleep_for(std::chrono::seconds(10));
     readThread.join();
     
+    for (const auto &str : *temp) 
+    {
+    std::cout << str << std::endl;
+    }
     
     std::cout << " finished ";
     return 0;
