@@ -13,7 +13,7 @@
 std::queue<std::string>* Orderbook_queue = new std::queue<std::string>();
 std::queue<std::string>* Trades_queue = new std::queue<std::string>();
 std::map<long,std::string>* data = new std::map<long, std::string>();
-std::mutex queueMutex;
+std::mutex queueMutexOB,queueMutexTR;
 
 std::vector<std::string> splitLine(const std::string& line, char delimiter)
 {
@@ -35,28 +35,22 @@ std::vector<std::string> splitLine(const std::string& line, char delimiter)
     return elements;
 }
 
-void processFiles()
+void processFilesTR()
 {
-    std::fstream* quotes = new std::fstream("/home/alessio/Desktop/prove/Data/orderbook.csv");
     std::fstream* trade = new std::fstream("/home/alessio/Desktop/prove/Data/trade_data.csv");
     std::string n, a;
 
-    while (quotes->good() || trade->good())
+    while (trade->good())
     {
-        std::getline(*quotes, n);
         std::getline(*trade, a);
 
-        if (quotes->eof() && trade->eof())
+        if (trade->eof())
         {
             break;
         }
 
         {
-            std::unique_lock<std::mutex> lock(queueMutex);
-            if (!n.empty())
-            {
-                Orderbook_queue->push(n);
-            }
+            std::unique_lock<std::mutex> lock(queueMutexTR);
             if (!a.empty())
             {
                 Trades_queue->push(a);
@@ -64,6 +58,32 @@ void processFiles()
         }
     }
 }
+
+void processFilesOB()
+{
+    std::fstream* quotes = new std::fstream("/home/alessio/Desktop/prove/Data/orderbook.csv");
+    std::string n, a;
+
+    while (quotes->good())
+    {
+        std::getline(*quotes, n);
+
+        if (quotes->eof() )
+        {
+            break;
+        }
+
+        {
+            std::unique_lock<std::mutex> lock(queueMutexOB);
+            if (!n.empty())
+            {
+                Orderbook_queue->push(n);
+            }
+            
+        }
+    }
+}
+
 int i = 0;
 std::vector<std::string>* temp = new std::vector<std::string>();
 void readFromQueues()
@@ -72,9 +92,14 @@ void readFromQueues()
     std::vector<std::string>  quotes, executed;
     while (true)
     {
-        std::unique_lock<std::mutex> lock(queueMutex, std::try_to_lock);
-        //std::cout << i++ << std::endl;
-        if (!lock.owns_lock())
+        std::unique_lock<std::mutex> lockOB(queueMutexOB, std::try_to_lock);
+        if (!lockOB.owns_lock())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        std::unique_lock<std::mutex> lockTR(queueMutexTR, std::try_to_lock);
+        if (!lockTR.owns_lock())
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
@@ -136,11 +161,13 @@ void readFromQueues()
 
 int main()
 {
-    std::thread processThread(processFiles);
+    std::thread processThreadOB(processFilesOB);
+    std::thread processThreadTR(processFilesTR);
     
     std::thread readThread(readFromQueues);
     
-    processThread.join();
+    processThreadOB.join();
+    processThreadTR.join();
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
     readThread.join();
