@@ -171,16 +171,14 @@ void processFilesOB()
     }
 }
 
-
 void readFromQueues()
 {
     std::this_thread::sleep_for(std::chrono::seconds(5));
     std::vector<std::string>  quotes, executed;
-    
     while (true)
     {
         
-        
+    
         std::unique_lock<std::mutex> lockOB(queueMutexOB, std::try_to_lock);
         if (!lockOB.owns_lock())
         {
@@ -197,7 +195,7 @@ void readFromQueues()
             continue;
         }
 
-        if (Orderbook_queue->empty() && Trades_queue->empty())
+        if (Orderbook_queue->empty() || Trades_queue->empty())
         {
             break;
         }
@@ -272,18 +270,20 @@ void readFromQueues()
 int main()
 {
 
-
-    ///home/acianini/Desktop/Thesis/trial
+    std::cout << " starting " << std::endl;
     std::thread processThreadOB(processFilesOB);
     std::thread processThreadTR(processFilesTR);
-    
+    std::cout << " reading " << std::endl;
+
     std::thread readThread(readFromQueues);
     
     processThreadOB.join();
     processThreadTR.join();
 
+    std::cout << " join third " << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(3));
     readThread.join();
+    std::cout << "finished all " << std::endl;
     auto it1 = (*ask).begin();
     auto it2 = (*bid).begin();
     int count = 0;
@@ -296,6 +296,7 @@ int main()
         ++it2;
         
     }   
+
    
     return 0;
 }
