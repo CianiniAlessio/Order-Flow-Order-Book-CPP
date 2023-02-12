@@ -9,6 +9,7 @@
 #include <map>
 #include <algorithm>
 #include <unordered_map>
+#include <map>
 
 #define SIZE_OF_QUOTES 9
 #define TIMESTAMP_TRADE_POS 4
@@ -18,9 +19,8 @@
 #define QUANTITY_ORDER_BOOK_POS 7
 std::queue<std::string>* Orderbook_queue = new std::queue<std::string>();
 std::queue<std::string>* Trades_queue = new std::queue<std::string>();
-std::map<long,std::string>* data = new std::map<long, std::string>();
-std::unordered_map<double, double>* ask = new std::unordered_map<double, double>();  
-std::unordered_map<double, double>* bid = new std::unordered_map<double, double>();  // no sense to retrieve all the orderbook everytime
+std::map<double, double>* ask = new std::map<double, double>();  
+std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>();  // no sense to retrieve all the orderbook everytime
 std::mutex queueMutexOB,queueMutexTR;
 
 std::vector<std::string> splitLine(const std::string& line, char delimiter)
@@ -198,12 +198,22 @@ int main()
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
     readThread.join();
-    std::cout << " finished 1";
-    for (auto keyvalue: *bid) 
-    {
-    std::cout << keyvalue.first<< " ";
-    std::cout << keyvalue.second << std::endl;
+    auto it1 = (*ask).begin();
+    auto it2 = (*ask).begin();
+    auto end1 = (*bid).end();
+    auto end2 = (*bid).end();
+
+    while (it1 != end1 && it2 != end2) {
+        std::cout << "ASK " << it1->second << ", " << it1->first << " | ";
+
+        std::cout << it2->first << " , " << it2->second << " BID" << std::endl;
+
+        ++it1;
+        ++it2;
     }
+
+
+
     
    
     return 0;
