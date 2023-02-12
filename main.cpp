@@ -7,12 +7,20 @@
 #include <vector>
 #include <mutex>
 #include <map>
+#include <algorithm>
+#include <unordered_map>
 
+#define SIZE_OF_QUOTES 9
 #define TIMESTAMP_TRADE_POS 4
 #define TIMESTAMP_ORDER_BOOK_POS 1
+#define SIDE_ORDER_BOOK_POS 4
+#define PRICE_ORDER_BOOK_POS 6
+#define QUANTITY_ORDER_BOOK_POS 7
 std::queue<std::string>* Orderbook_queue = new std::queue<std::string>();
 std::queue<std::string>* Trades_queue = new std::queue<std::string>();
 std::map<long,std::string>* data = new std::map<long, std::string>();
+std::unordered_map<double, double>* ask = new std::unordered_map<double, double>();  
+std::unordered_map<double, double>* bid = new std::unordered_map<double, double>();  // no sense to retrieve all the orderbook everytime
 std::mutex queueMutexOB,queueMutexTR;
 
 std::vector<std::string> splitLine(const std::string& line, char delimiter)
@@ -49,13 +57,13 @@ void processFilesTR()
             break;
         }
 
+        
+        std::unique_lock<std::mutex> lock(queueMutexTR);
+        if (!a.empty())
         {
-            std::unique_lock<std::mutex> lock(queueMutexTR);
-            if (!a.empty())
-            {
-                Trades_queue->push(a);
-            }
+            Trades_queue->push(a);
         }
+        
     }
 }
 
@@ -73,13 +81,11 @@ void processFilesOB()
             break;
         }
 
+        
+        std::unique_lock<std::mutex> lock(queueMutexOB);
+        if (!n.empty())
         {
-            std::unique_lock<std::mutex> lock(queueMutexOB);
-            if (!n.empty())
-            {
-                Orderbook_queue->push(n);
-            }
-            
+            Orderbook_queue->push(n);
         }
     }
 }
@@ -99,8 +105,11 @@ void readFromQueues()
             continue;
         }
         std::unique_lock<std::mutex> lockTR(queueMutexTR, std::try_to_lock);
+        
+      
         if (!lockTR.owns_lock())
         {
+           
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
@@ -112,6 +121,22 @@ void readFromQueues()
         if (!Orderbook_queue->empty())
         {
             quotes = splitLine(Orderbook_queue->front(),',');
+            if(quotes.size() == SIZE_OF_QUOTES)
+            {
+
+                
+                if(quotes[SIDE_ORDER_BOOK_POS]=="a") // need to add destroyer in case qty = 0 to save memory adn remove the price
+                {
+                        if(std::stod(quotes[QUANTITY_ORDER_BOOK_POS]) == 0) (*ask).erase(std::stod(quotes[PRICE_ORDER_BOOK_POS]));
+                        else (*ask)[std::stod(quotes[PRICE_ORDER_BOOK_POS])] = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
+                }
+                else
+                {
+                        if(std::stod(quotes[QUANTITY_ORDER_BOOK_POS])==0) (*bid).erase(std::stod(quotes[PRICE_ORDER_BOOK_POS]));
+                        else  (*bid)[std::stod(quotes[PRICE_ORDER_BOOK_POS])] = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
+                }
+            }
+                
         }
         if (!Trades_queue->empty())
         {
@@ -156,11 +181,13 @@ void readFromQueues()
 
 
 
-#include <algorithm>
 
 
 int main()
 {
+
+
+    ///home/acianini/Desktop/Thesis/trial
     std::thread processThreadOB(processFilesOB);
     std::thread processThreadTR(processFilesTR);
     
@@ -171,12 +198,13 @@ int main()
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
     readThread.join();
-    
-    for (const auto &str : *temp) 
+    std::cout << " finished 1";
+    for (auto keyvalue: *bid) 
     {
-    std::cout << str << std::endl;
+    std::cout << keyvalue.first<< " ";
+    std::cout << keyvalue.second << std::endl;
     }
     
-    std::cout << " finished ";
+   
     return 0;
 }
