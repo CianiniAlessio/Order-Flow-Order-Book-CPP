@@ -36,7 +36,7 @@ void set_price_quantity_orderBook(std::map<double, double>* ask, std::map<double
                 (*ask).erase(std::stod(quotes[PRICE_ORDER_BOOK_POS]));
             }
             else {
-                (*ask)[std::ceil(std::stod(quotes[PRICE_ORDER_BOOK_POS])*100)/100] = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
+                (*ask)[std::stod(quotes[PRICE_ORDER_BOOK_POS])] = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
             }
         }
         else {
@@ -44,7 +44,7 @@ void set_price_quantity_orderBook(std::map<double, double>* ask, std::map<double
                 (*bid).erase(std::stod(quotes[PRICE_ORDER_BOOK_POS]));
             }
             else {
-                (*bid)[std::ceil(std::stod(quotes[PRICE_ORDER_BOOK_POS])*100)/100] = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
+                (*bid)[std::stod(quotes[PRICE_ORDER_BOOK_POS])] = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
             }
         }
     }
@@ -53,8 +53,8 @@ void set_price_quantity_orderBook(std::map<double, double>* ask, std::map<double
 
 
 void manage_trade_in_orderBook(std::map<double, double>* ask_map, std::map<double, double, std::greater<double>>* bid_map, const std::vector<std::string>& order) {
-    double price = stod(order[1]);
-    double qty = stod(order[2]);
+    double price = std::stod(order[1]);
+    double qty = std::stod(order[2]);
     std::string timestamp = order[4];
     bool isBuyerMaker = (order[5] == "true");
     
@@ -102,7 +102,7 @@ void manage_trade_in_orderBook(std::map<double, double>* ask_map, std::map<doubl
             }
         }
     }
-};
+}
 
 std::vector<std::string> splitLine(const std::string& line, char delimiter)
 {
@@ -286,12 +286,12 @@ int main()
     readThread.join();
     auto it1 = (*ask).begin();
     auto it2 = (*bid).begin();
-    
-    while (it1 != (*ask).end() || it2 != (*bid).end() ) {
+    int count = 0;
+    while (it1 != (*ask).end() && it2 != (*bid).end() ) {
         std::cout  << std::fixed <<std::setprecision(2) << "ASK " << it1->second << ", " << it1->first << " | ";
 
         std::cout << std::fixed << std::setprecision(2) << it2->first << " , " << it2->second << " BID" << std::endl;
-
+        count++;
         ++it1;
         ++it2;
         
