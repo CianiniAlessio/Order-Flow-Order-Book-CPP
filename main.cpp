@@ -58,8 +58,8 @@ void manage_trade_in_orderBook(std::map<double, double>* ask_map, std::map<doubl
     std::string timestamp = order[4];
     bool isBuyerMaker = (order[5] == "true");
     
-    // FIRST THE BUY
-    if (isBuyerMaker) { 
+    //  if false then means they hit a sell limit, therefore market order buy, i'll check the ask
+    if (!isBuyerMaker) { 
         auto it = ask_map->begin();
         while (it != ask_map->end() && qty > 0) {
             if (it->first <= price) {
@@ -80,7 +80,7 @@ void manage_trade_in_orderBook(std::map<double, double>* ask_map, std::map<doubl
             }
         }
     } 
-    // SECOND THE SELL
+    // if true the buyer is maker, that means they hit a limitorder buy, therefore sell was at market price (taker)
     else { 
         auto it = bid_map->begin();
         while (it != bid_map->end() && qty > 0) {
@@ -218,11 +218,10 @@ void readFromQueues()
         // HERE I HAVE TWO QUEUE FROM BEFORE WAITING TO BE RED, I CHECK FOR PROBLEMS IN THE DATA, IF THERE ARE PROBLEMS I POP THE DATA WITHOUT DOING NOTHING
         // IF EVERYTHING GOES SMOOTHLY I INSERT ALL MY DATA IN A VECTOR CALLED TEMP WHICH I WILL USE LATER I SUPPOSE. BUT I THINK IT WILL NOT BE NECESSARY 
 
-        if (quotes.size()!= SIZE_OF_QUOTES) // MEANING END OF FILE IN WHICH THERE IS THE EMPTY RAW THAT I NEED TO MANAGE IN SOME WAY 
+        if (quotes.size()!= SIZE_OF_QUOTES) // Mmeaning there is some problem in the quotes (maybe finished file?)
         {
-            if(executed.size() == SIZE_OF_TRADES)
+            if(executed.size() == SIZE_OF_TRADES) // but i have an executed
             {
-                    // changeorderbook_save_eecuted(), will remove this temp thing  
                     
                     manage_trade_in_orderBook(ask,bid,executed);
                     Trades_queue->pop();
@@ -232,16 +231,17 @@ void readFromQueues()
             }
         }
         else
-        {
-            if (executed.size()!= SIZE_OF_TRADES)
+        {  // quotes is ok
+            if (executed.size()!= SIZE_OF_TRADES) // but maybe i don't have trade 
             {
                     
-                    // I CHANGE THE ORDERBOOK HERE
+                    // so i change the orderbook
                     
                     set_price_quantity_orderBook(ask,bid,quotes);
                     Orderbook_queue->pop();
             }
-            else{
+            else{  // or maybe i have trades
+            // so i check the timestamp if i have both 
                 //IF BOTH GOOD CHECK TIMESTAMP
                   if(std::stol(executed[TIMESTAMP_TRADE_POS]) <= std::stol(quotes[TIMESTAMP_ORDER_BOOK_POS]))
                   {
