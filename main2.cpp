@@ -26,6 +26,7 @@ std::mutex queueMutexOB,queueMutexTR;
 // when both file are finished i stop the cycle, right now when the queue is finished i stop the cycle which is wrong
 bool order_book_file_red{false}, trades_file_red{false};
 
+// can remove
 void process_order(const std::string& side, double& price, std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid)
 {
     if (side == "b") {
@@ -96,7 +97,6 @@ void set_price_quantity_orderBook(std::map<double, double>& ask, std::map<double
     
     double price = std::stod(quotes[PRICE_ORDER_BOOK_POS]);
     double quantity = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
-    //process_order(quotes[SIDE_ORDER_BOOK_POS],price,ask,bid);
     std::string side = quotes[SIDE_ORDER_BOOK_POS];
 
     
@@ -201,7 +201,6 @@ void processFilesOB(std::queue<std::string>& Orderbook_queue)
     // to implement
     order_book_file_red = true;
 }
-
 void readFromQueues(std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid,std::queue<std::string>& Orderbook_queue, std::queue<std::string>& Trades_queue)
 {
     
@@ -209,7 +208,6 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
     while (true)
     {
         
-    
         std::unique_lock<std::mutex> lockOB(queueMutexOB, std::try_to_lock);
         std::unique_lock<std::mutex> lockTR(queueMutexTR, std::try_to_lock);
         
@@ -334,7 +332,6 @@ int main()
         ++it2;
         
     }   
-    std::cout << "alessio" << std::endl;
 
    
     return 0;
