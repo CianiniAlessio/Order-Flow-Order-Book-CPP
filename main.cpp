@@ -204,7 +204,7 @@ void readFromQueues()
         //
         
         // should have 
-        if(order_book_file_red && trades_file_red) break;
+        if(order_book_file_red !! trades_file_red) break;
         if (Orderbook_queue->empty() || Trades_queue->empty())
         {
             continue;
