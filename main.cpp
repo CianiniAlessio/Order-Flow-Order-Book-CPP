@@ -26,6 +26,10 @@ std::map<double, double>* ask = new std::map<double, double>();
 std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>();  // no sense to retrieve all the orderbook everytime
 std::mutex queueMutexOB,queueMutexTR;
 
+// to implement this part 
+// when both file are finished i stop the cycle, right now when the queue is finished i stop the cycle which is wrong
+bool order_book_file_red{false}, trades_file_red{false};
+
 
 void set_price_quantity_orderBook(std::map<double, double>* ask, std::map<double, double, std::greater<double>>* bid, const std::vector<std::string>& quotes) {
     
@@ -144,6 +148,8 @@ void processFilesTR()
         }
         
     }
+    // to implement
+    trades_file_red = true;
 }
 
 void processFilesOB()
@@ -166,7 +172,10 @@ void processFilesOB()
         {
             Orderbook_queue->push(n);
         }
+        
     }
+    // to implement
+    order_book_file_red = true;
 }
 
 void readFromQueues()
@@ -187,10 +196,22 @@ void readFromQueues()
         }
         
 
+        // this not
         if (Orderbook_queue->empty() || Trades_queue->empty())
         {
             break;
         }
+        //
+        
+        // should have 
+        if(order_book_file_red && trades_file_red) break;
+        if (Orderbook_queue->empty() || Trades_queue->empty())
+        {
+            continue;
+        }
+        //
+        
+        
 
        
         if (!Orderbook_queue->empty())
