@@ -20,10 +20,7 @@
 #define SIDE_ORDER_BOOK_POS 4
 #define PRICE_ORDER_BOOK_POS 6
 #define QUANTITY_ORDER_BOOK_POS 7
-std::queue<std::string>* Orderbook_queue = new std::queue<std::string>();
-std::queue<std::string>* Trades_queue = new std::queue<std::string>();
-std::map<double, double>* ask = new std::map<double, double>();  
-std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>();  // no sense to retrieve all the orderbook everytime
+ // no sense to retrieve all the orderbook everytime
 std::mutex queueMutexOB,queueMutexTR;
 
 // to implement this part 
@@ -126,7 +123,7 @@ std::vector<std::string> splitLine(const std::string& line, char delimiter)
     return elements;
 }
 
-void processFilesTR()
+void processFilesTR(std::queue<std::string>& Trades_queue)
 {
     std::fstream* trade = new std::fstream("/home/alessio/Desktop/prove/Data/trade_data.csv");
     std::string a;
@@ -152,7 +149,7 @@ void processFilesTR()
     trades_file_red = true;
 }
 
-void processFilesOB()
+void processFilesOB(std::queue<std::string>& Orderbook_queue)
 {
     std::fstream* quotes = new std::fstream("/home/alessio/Desktop/prove/Data/orderbook.csv");
     std::string n;
@@ -178,7 +175,7 @@ void processFilesOB()
     order_book_file_red = true;
 }
 
-void readFromQueues()
+void readFromQueues(std::queue<std::string>& Orderbook_queue, std::queue<std::string>& Trades_queue)
 {
     
     std::vector<std::string>  quotes, executed;
@@ -280,10 +277,15 @@ void readFromQueues()
 int main()
 {
 
+    std::queue<std::string>* Orderbook_queue = new std::queue<std::string>();
+    std::queue<std::string>* Trades_queue = new std::queue<std::string>();
+    std::map<double, double>* ask = new std::map<double, double>();  
+    std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>(); 
     
-    std::thread processThreadOB(processFilesOB);
-    std::thread processThreadTR(processFilesTR);
-    std::thread readThread(readFromQueues);
+    
+    std::thread processThreadOB(processFilesOB,Orderbook_queue);
+    std::thread processThreadTR(processFilesTR,Trades_queue);
+    std::thread readThread(readFromQueues,Orderbook_queue,Trades_queue);
     
     processThreadOB.join();
     processThreadTR.join();
