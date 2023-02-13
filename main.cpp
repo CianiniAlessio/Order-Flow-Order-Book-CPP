@@ -127,7 +127,7 @@ void processFilesTR()
     std::fstream* trade = new std::fstream("/home/alessio/Desktop/prove/Data/trade_data.csv");
     std::string a;
 
-    while (trade->good())
+    while (trade->good()) // need to move std::getline(*trade, a); here so i don't count the last empty line ( to do ) 
     {
         std::getline(*trade, a);
 
@@ -151,7 +151,7 @@ void processFilesOB()
     std::fstream* quotes = new std::fstream("/home/alessio/Desktop/prove/Data/orderbook.csv");
     std::string n;
 
-    while (quotes->good())
+    while (quotes->good()) // need to move std::getline(*qutoes, n); here so i don't count the last empty line ( to do )
     {
         std::getline(*quotes, n);
 
