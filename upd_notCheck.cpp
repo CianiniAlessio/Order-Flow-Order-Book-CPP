@@ -11,7 +11,6 @@
 #include <map>
 #include <algorithm>
 #include <unordered_map>
-#include <map>
 
 #define SIZE_OF_QUOTES 9
 #define SIZE_OF_TRADES 6
@@ -277,8 +276,8 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
 int main()
 {
 
-    std::queue<std::string>* Orderbook_queue = new std::queue<std::string>();
-    std::queue<std::string>* Trades_queue = new std::queue<std::string>();
+    std::queue<std::string> Orderbook_queue;
+    std::queue<std::string> Trades_queue;
     std::map<double, double>* ask = new std::map<double, double>();  
     std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>(); 
     
