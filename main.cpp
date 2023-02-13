@@ -216,20 +216,15 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
         }
         
 
-        // this not
-        if (Orderbook_queue.empty() || Trades_queue.empty())
-        {
-            break;
-        }
-        //
         
-        // should have 
-        if(order_book_file_red || trades_file_red) break;
-        if (Orderbook_queue.empty() || Trades_queue.empty())
+        if(order_book_file_red || trades_file_red) 
         {
-            continue;
+            if (Orderbook_queue.empty() || Trades_queue.empty())
+            {
+                break;
+            }
         }
-        //
+        
         
         
 
@@ -237,10 +232,16 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
         if (!Orderbook_queue.empty())
         {
             quotes = splitLine(Orderbook_queue.front(),',');                
-        }       
+        }    
+        else{
+            quotes = splitLine("",',');
+        }   
         if (!Trades_queue.empty())
         {
             executed = splitLine(Trades_queue.front(),','); // change order book thanks to this
+        }
+        else{
+            executed = splitLine("",',');
         }
 
 
@@ -253,7 +254,7 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
             if(executed.size() == SIZE_OF_TRADES) // but i have an executed
             {
                     
-                    manage_trade_in_orderBook(ask,bid,executed);
+                    /////////manage_trade_in_orderBook(ask,bid,executed);
                     Trades_queue.pop();
             }
             else{
@@ -277,7 +278,7 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
                   {
                     // I CHECK THE ORDERBOOK LEVELS AND SEE IF I CAN EXECUTE 
                   
-                    manage_trade_in_orderBook(ask,bid,executed);
+                    //////////manage_trade_in_orderBook(ask,bid,executed);
                     Trades_queue.pop();
                   }
                   else
@@ -313,13 +314,13 @@ int main()
     processThreadOB.join();
     processThreadTR.join();
     
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    //ls
+    //std::this_thread::sleep_for(std::chrono::seconds(10));
     readThread.join();
     
     auto it2 = (*ask).begin();
     auto it1 = (*bid).begin();
     int count = 0;
-    std::cout << "-" << std::endl;
     while (it1 != (*ask).end() && it2 != (*bid).end()  && count < 50) {
         std::cout  << std::fixed <<std::setprecision(2) << "BID " << it1->second << ", " << it1->first << " | ";
 
@@ -329,6 +330,7 @@ int main()
         ++it2;
         
     }   
+    std::cout << "alessio" << std::endl;
 
    
     return 0;
