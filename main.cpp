@@ -173,27 +173,21 @@ void processFilesOB()
 
 void readFromQueues()
 {
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    
     std::vector<std::string>  quotes, executed;
     while (true)
     {
         
     
         std::unique_lock<std::mutex> lockOB(queueMutexOB, std::try_to_lock);
-        if (!lockOB.owns_lock())
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            continue;
-        }
         std::unique_lock<std::mutex> lockTR(queueMutexTR, std::try_to_lock);
         
-      
-        if (!lockTR.owns_lock())
+        if (!lockOB.owns_lock() || !lockTR.owns_lock())
         {
-           
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
+        
 
         if (Orderbook_queue->empty() || Trades_queue->empty())
         {
@@ -281,7 +275,7 @@ int main()
     processThreadTR.join();
 
     std::cout << " join third " << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(std::chrono::seconds(10));
     readThread.join();
     std::cout << "finished all " << std::endl;
     auto it1 = (*ask).begin();
