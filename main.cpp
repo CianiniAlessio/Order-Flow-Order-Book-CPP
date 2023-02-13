@@ -175,7 +175,7 @@ void processFilesOB(std::queue<std::string>& Orderbook_queue)
     order_book_file_red = true;
 }
 
-void readFromQueues(std::queue<std::string>& Orderbook_queue, std::queue<std::string>& Trades_queue)
+void readFromQueues(std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid,std::queue<std::string>& Orderbook_queue, std::queue<std::string>& Trades_queue)
 {
     
     std::vector<std::string>  quotes, executed;
@@ -283,9 +283,9 @@ int main()
     std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>(); 
     
     
-    std::thread processThreadOB(processFilesOB,Orderbook_queue);
-    std::thread processThreadTR(processFilesTR,Trades_queue);
-    std::thread readThread(readFromQueues,Orderbook_queue,Trades_queue);
+    std::thread processThreadOB(processFilesOB,std::ref(Orderbook_queue));
+    std::thread processThreadTR(processFilesTR,std::ref(Trades_queue));
+    std::thread readThread(readFromQueues,std::ref(ask),std::ref(bid),std::ref(Orderbook_queue),std::ref(Trades_queue));
     
     processThreadOB.join();
     processThreadTR.join();
