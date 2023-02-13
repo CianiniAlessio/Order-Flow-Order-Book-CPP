@@ -20,7 +20,10 @@
 #define SIDE_ORDER_BOOK_POS 4
 #define PRICE_ORDER_BOOK_POS 6
 #define QUANTITY_ORDER_BOOK_POS 7
- // no sense to retrieve all the orderbook everytime
+std::queue<std::string>* Orderbook_queue = new std::queue<std::string>();
+std::queue<std::string>* Trades_queue = new std::queue<std::string>();
+std::map<double, double>* ask = new std::map<double, double>();  
+std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>();  // no sense to retrieve all the orderbook everytime
 std::mutex queueMutexOB,queueMutexTR;
 
 // to implement this part 
@@ -123,7 +126,7 @@ std::vector<std::string> splitLine(const std::string& line, char delimiter)
     return elements;
 }
 
-void processFilesTR(std::queue<std::string>& Trades_queue)
+void processFilesTR()
 {
     std::fstream* trade = new std::fstream("/home/alessio/Desktop/prove/Data/trade_data.csv");
     std::string a;
@@ -149,7 +152,7 @@ void processFilesTR(std::queue<std::string>& Trades_queue)
     trades_file_red = true;
 }
 
-void processFilesOB(std::queue<std::string>& Orderbook_queue)
+void processFilesOB()
 {
     std::fstream* quotes = new std::fstream("/home/alessio/Desktop/prove/Data/orderbook.csv");
     std::string n;
@@ -175,7 +178,7 @@ void processFilesOB(std::queue<std::string>& Orderbook_queue)
     order_book_file_red = true;
 }
 
-void readFromQueues(std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid,std::queue<std::string>& Orderbook_queue, std::queue<std::string>& Trades_queue)
+void readFromQueues()
 {
     
     std::vector<std::string>  quotes, executed;
@@ -201,7 +204,7 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
         //
         
         // should have 
-        if(order_book_file_red !! trades_file_red) break;
+        if(order_book_file_red && trades_file_red) break;
         if (Orderbook_queue->empty() || Trades_queue->empty())
         {
             continue;
@@ -277,15 +280,10 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
 int main()
 {
 
-    std::queue<std::string>* Orderbook_queue = new std::queue<std::string>();
-    std::queue<std::string>* Trades_queue = new std::queue<std::string>();
-    std::map<double, double>* ask = new std::map<double, double>();  
-    std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>(); 
     
-    
-    std::thread processThreadOB(processFilesOB,std::ref(Orderbook_queue));
-    std::thread processThreadTR(processFilesTR,std::ref(Trades_queue));
-    std::thread readThread(readFromQueues,std::ref(ask),std::ref(bid),std::ref(Orderbook_queue),std::ref(Trades_queue));
+    std::thread processThreadOB(processFilesOB);
+    std::thread processThreadTR(processFilesTR);
+    std::thread readThread(readFromQueues);
     
     processThreadOB.join();
     processThreadTR.join();
