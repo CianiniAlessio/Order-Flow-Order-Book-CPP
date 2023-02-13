@@ -213,14 +213,11 @@ void readFromQueues()
         
         
 
-       
+       // and then i remove these 2 if since if we arrived here that means the queue is not empty
         if (!Orderbook_queue->empty())
         {
-            quotes = splitLine(Orderbook_queue->front(),',');
-                
-        }
-
-       
+            quotes = splitLine(Orderbook_queue->front(),',');                
+        }       
         if (!Trades_queue->empty())
         {
             executed = splitLine(Trades_queue->front(),','); // change order book thanks to this
@@ -283,20 +280,17 @@ void readFromQueues()
 int main()
 {
 
-    std::cout << " starting " << std::endl;
+    
     std::thread processThreadOB(processFilesOB);
     std::thread processThreadTR(processFilesTR);
-    std::cout << " reading " << std::endl;
-
     std::thread readThread(readFromQueues);
     
     processThreadOB.join();
     processThreadTR.join();
-
-    std::cout << " join third " << std::endl;
+    
     std::this_thread::sleep_for(std::chrono::seconds(10));
     readThread.join();
-    std::cout << "finished all " << std::endl;
+    
     auto it1 = (*ask).begin();
     auto it2 = (*bid).begin();
     int count = 0;
