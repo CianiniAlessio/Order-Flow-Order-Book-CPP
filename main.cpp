@@ -70,8 +70,7 @@ void manage_trade_in_orderBook(std::map<double, double>* ask_map, std::map<doubl
                     (*ask_map)[it->first] -= qty;
                     qty = 0;
                 }
-                auto end_map = ask_map->end(); 
-                if (it == end_map) {
+                if (it == ask_map->end()) {
                     break;
                 }
                 else ++it;
@@ -92,8 +91,7 @@ void manage_trade_in_orderBook(std::map<double, double>* ask_map, std::map<doubl
                     (*bid_map)[it->first] -= qty;
                     qty = 0;
                 }
-                auto end_map = bid_map->end(); 
-                if (it == end_map) {
+                if (it == bid_map->end()) {
                     break;
                 }
                 else ++it;
