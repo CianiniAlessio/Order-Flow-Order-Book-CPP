@@ -20,7 +20,7 @@
 #define PRICE_ORDER_BOOK_POS 6
 #define QUANTITY_ORDER_BOOK_POS 7
  // no sense to retrieve all the orderbook everytime
-std::mutex queueMutexOB,queueMutexTR;
+std::mutex queueMutexOB,queueMutexTR, obFileMutex, trFileMutex;;
 
 // to implement this part 
 // when both file are finished i stop the cycle, right now when the queue is finished i stop the cycle which is wrong
@@ -173,6 +173,7 @@ void processFilesTR(std::queue<std::string>& Trades_queue)
         
     }
     // to implement
+    std::unique_lock<std::mutex> lock(trFileMutex);
     trades_file_red = true;
 }
 
@@ -199,6 +200,7 @@ void processFilesOB(std::queue<std::string>& Orderbook_queue)
         
     }
     // to implement
+    std::unique_lock<std::mutex> lock(obFileMutex);
     order_book_file_red = true;
 }
 void readFromQueues(std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid,std::queue<std::string>& Orderbook_queue, std::queue<std::string>& Trades_queue)
@@ -210,21 +212,24 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
         
         std::unique_lock<std::mutex> lockOB(queueMutexOB, std::try_to_lock);
         std::unique_lock<std::mutex> lockTR(queueMutexTR, std::try_to_lock);
+        std::unique_lock<std::mutex> lockObFile(obFileMutex, std::try_to_lock);
+        std::unique_lock<std::mutex> lockTrFile(trFileMutex, std::try_to_lock);
         
-        if (!lockOB.owns_lock() || !lockTR.owns_lock())
+        if (!lockOB.owns_lock() || !lockTR.owns_lock() || !lockObFile.owns_lock() || !lockTrFile.owns_lock())
         {
             //std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
         
-
         
-        if(order_book_file_red || trades_file_red) 
+        if(order_book_file_red && Orderbook_queue.empty())
+        {            
+            break;
+        }
+        
+        if(trades_file_red && Trades_queue.empty()) 
         {
-            if (Orderbook_queue.empty() || Trades_queue.empty())
-            {
-                break;
-            }
+            break;
         }
         
         
