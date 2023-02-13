@@ -192,14 +192,14 @@ void readFromQueues()
             break;
         }
 
-        // HERE I CREATE THE ORDER BOOK
+       
         if (!Orderbook_queue->empty())
         {
             quotes = splitLine(Orderbook_queue->front(),',');
                 
         }
 
-        // HERE I SHOULD CHANGE THE ORDERBOOK BASED ON THE TRADES (ONGOING)
+       
         if (!Trades_queue->empty())
         {
             executed = splitLine(Trades_queue->front(),','); // change order book thanks to this
