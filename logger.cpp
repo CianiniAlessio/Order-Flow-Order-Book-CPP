@@ -16,3 +16,4 @@ void Logger::writeToLog(std::string message) {
     std::cout << "[" <<timestamp << "] " << message << std::endl << std::flush;
     lock.unlock();
 }
+ 

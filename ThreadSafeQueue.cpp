@@ -35,5 +35,5 @@ bool ThreadSafeQueue::is_empty() {
 
 size_t ThreadSafeQueue::size() {
     std::lock_guard<std::mutex> lock(m_mutex);
-    return m_queue.size();
+    return m_queue.size(); 
 }

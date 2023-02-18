@@ -20,46 +20,37 @@
 #define PRICE_ORDER_BOOK_POS 6
 #define QUANTITY_ORDER_BOOK_POS 7
  // no sense to retrieve all the orderbook everytime
-std::mutex queueMutexOB,queueMutexTR;
+std::mutex queueMutexOB,queueMutexTR, obFileMutex, trFileMutex;;
 
 // to implement this part 
 // when both file are finished i stop the cycle, right now when the queue is finished i stop the cycle which is wrong
 bool order_book_file_red{false}, trades_file_red{false};
 
-
-void set_price_quantity_orderBook(std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid, const std::vector<std::string>& quotes) {
-    
-    
-    if(quotes.size() == SIZE_OF_QUOTES) {
-        if(quotes[SIDE_ORDER_BOOK_POS] == "a") {
-            if(std::stod(quotes[QUANTITY_ORDER_BOOK_POS]) == 0) {
-                ask.erase(std::stod(quotes[PRICE_ORDER_BOOK_POS]));
-            }
-            else {
-                ask[std::stod(quotes[PRICE_ORDER_BOOK_POS])] = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
-            }
+// can remove
+void process_order(const std::string& side, double& price, std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid)
+{
+    if (side == "b") {
+        
+        auto it = ask.begin();
+        while (it != ask.end() && it->first <= price) {
+            it = ask.erase(it);
         }
-        else {
-            if(std::stod(quotes[QUANTITY_ORDER_BOOK_POS]) == 0) {
-                bid.erase(std::stod(quotes[PRICE_ORDER_BOOK_POS]));
-            }
-            else {
-                bid[std::stod(quotes[PRICE_ORDER_BOOK_POS])] = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
-            }
+    }
+    else {
+        
+        auto it = bid.begin();
+        while (it != bid.end() && it->first >= price) {
+            it = bid.erase(it);
         }
     }
 }
 
+// i pass the set of the level as if it was an order and return the quantity not filled and put it in the book
+double manage_trade_in_orderBook(std::map<double, double>& ask_map, std::map<double, double, std::greater<double>>& bid_map, double& price, double& qty, std::string side) {
 
-
-void manage_trade_in_orderBook(std::map<double, double>& ask_map, std::map<double, double, std::greater<double>>& bid_map, const std::vector<std::string>& order) {
-    double price = std::stod(order[1]);
-    double qty = std::stod(order[2]);
-    std::string timestamp = order[4];
-    bool isBuyerMaker = (order[5] == "true");
     
-    //  if false then means they hit a sell limit, therefore market order buy, i'll check the ask
-    if (!isBuyerMaker) { 
+    //  if bid i check the level and return the quantity not filled and set a price to that level with that quantity
+    if (side == "b") { 
         auto it = ask_map.begin();
         while (it != ask_map.end() && qty > 0) {
             if (it->first <= price) {
@@ -79,7 +70,6 @@ void manage_trade_in_orderBook(std::map<double, double>& ask_map, std::map<doubl
             }
         }
     } 
-    // if true the buyer is maker, that means they hit a limitorder buy, therefore sell was at market price (taker)
     else { 
         auto it = bid_map.begin();
         while (it != bid_map.end() && qty > 0) {
@@ -100,7 +90,45 @@ void manage_trade_in_orderBook(std::map<double, double>& ask_map, std::map<doubl
             }
         }
     }
+    return qty;
 }
+
+void set_price_quantity_orderBook(std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid, const std::vector<std::string>& quotes) {
+    
+    double price = std::stod(quotes[PRICE_ORDER_BOOK_POS]);
+    double quantity = std::stod(quotes[QUANTITY_ORDER_BOOK_POS]);
+    std::string side = quotes[SIDE_ORDER_BOOK_POS];
+
+    
+    quantity = manage_trade_in_orderBook(ask,bid,price,quantity,side);
+    if(quotes.size() == SIZE_OF_QUOTES) {
+        if(side == "a") {
+            if(quantity == 0) {
+                ask.erase(price);
+            }
+            else {
+                ask[price] = quantity;
+            }
+            
+        }
+        else {
+            if(quantity == 0) {
+                bid.erase(price);
+            }
+            else {
+                bid[price] = quantity;
+            }
+        }        
+    }
+    
+}
+
+
+
+
+
+// i suppose useless 
+
 
 std::vector<std::string> splitLine(const std::string& line, char delimiter)
 {
@@ -145,12 +173,13 @@ void processFilesTR(std::queue<std::string>& Trades_queue)
         
     }
     // to implement
+    std::unique_lock<std::mutex> lock(trFileMutex);
     trades_file_red = true;
 }
 
 void processFilesOB(std::queue<std::string>& Orderbook_queue)
 {
-    std::fstream* quotes = new std::fstream("/home/alessio/Desktop/prove/Data/orderbook.csv");
+    std::fstream* quotes = new std::fstream("/home/alessio/Desktop/prove/Data/orderbook2.csv");
     std::string n;
 
     while (quotes->good()) // need to move std::getline(*qutoes, n); here so i don't count the last empty line ( to do )
@@ -171,9 +200,9 @@ void processFilesOB(std::queue<std::string>& Orderbook_queue)
         
     }
     // to implement
+    std::unique_lock<std::mutex> lock(obFileMutex);
     order_book_file_red = true;
 }
-
 void readFromQueues(std::map<double, double>& ask, std::map<double, double, std::greater<double>>& bid,std::queue<std::string>& Orderbook_queue, std::queue<std::string>& Trades_queue)
 {
     
@@ -181,31 +210,28 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
     while (true)
     {
         
-    
         std::unique_lock<std::mutex> lockOB(queueMutexOB, std::try_to_lock);
         std::unique_lock<std::mutex> lockTR(queueMutexTR, std::try_to_lock);
+        std::unique_lock<std::mutex> lockObFile(obFileMutex, std::try_to_lock);
+        std::unique_lock<std::mutex> lockTrFile(trFileMutex, std::try_to_lock);
         
-        if (!lockOB.owns_lock() || !lockTR.owns_lock())
+        if (!lockOB.owns_lock() || !lockTR.owns_lock() || !lockObFile.owns_lock() || !lockTrFile.owns_lock())
         {
             //std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
         
-
-        // this not
-        if (Orderbook_queue.empty() || Trades_queue.empty())
+        
+        if(order_book_file_red && Orderbook_queue.empty())
+        {            
+            break;
+        }
+        
+        if(trades_file_red && Trades_queue.empty()) 
         {
             break;
         }
-        //
         
-        // should have 
-        if(order_book_file_red || trades_file_red) break;
-        if (Orderbook_queue.empty() || Trades_queue.empty())
-        {
-            continue;
-        }
-        //
         
         
 
@@ -213,10 +239,16 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
         if (!Orderbook_queue.empty())
         {
             quotes = splitLine(Orderbook_queue.front(),',');                
-        }       
+        }    
+        else{
+            quotes = splitLine("",',');
+        }   
         if (!Trades_queue.empty())
         {
             executed = splitLine(Trades_queue.front(),','); // change order book thanks to this
+        }
+        else{
+            executed = splitLine("",',');
         }
 
 
@@ -229,7 +261,7 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
             if(executed.size() == SIZE_OF_TRADES) // but i have an executed
             {
                     
-                    manage_trade_in_orderBook(ask,bid,executed);
+                    /////////manage_trade_in_orderBook(ask,bid,executed);
                     Trades_queue.pop();
             }
             else{
@@ -253,7 +285,7 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
                   {
                     // I CHECK THE ORDERBOOK LEVELS AND SEE IF I CAN EXECUTE 
                   
-                    manage_trade_in_orderBook(ask,bid,executed);
+                    //////////manage_trade_in_orderBook(ask,bid,executed);
                     Trades_queue.pop();
                   }
                   else
@@ -276,29 +308,30 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
 int main()
 {
 
-    std::queue<std::string> Orderbook_queue;
-    std::queue<std::string> Trades_queue;
-    std::map<double, double>* ask = new std::map<double, double>();  
-    std::map<double, double, std::greater<double>>* bid = new std::map<double, double,std::greater<double>>(); 
+    auto Orderbook_queue = std::make_unique<std::queue<std::string>>();
+    auto Trades_queue = std::make_unique<std::queue<std::string>>();    
+    auto ask =  std::make_unique<std::map<double, double>>();  
+    auto bid =  std::make_unique<std::map<double, double,std::greater<double>>>();  
     
     
-    std::thread processThreadOB(processFilesOB,std::ref(Orderbook_queue));
-    std::thread processThreadTR(processFilesTR,std::ref(Trades_queue));
-    std::thread readThread(readFromQueues,std::ref(ask),std::ref(bid),std::ref(Orderbook_queue),std::ref(Trades_queue));
+    std::thread processThreadOB(processFilesOB,std::ref(*Orderbook_queue));
+    std::thread processThreadTR(processFilesTR,std::ref(*Trades_queue));
+    std::thread readThread(readFromQueues,std::ref(*ask),std::ref(*bid),std::ref(*Orderbook_queue),std::ref(*Trades_queue));
     
     processThreadOB.join();
     processThreadTR.join();
     
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    //ls
+    //std::this_thread::sleep_for(std::chrono::seconds(10));
     readThread.join();
     
-    auto it1 = (*ask).begin();
-    auto it2 = (*bid).begin();
+    auto it2 = (*ask).begin();
+    auto it1 = (*bid).begin();
     int count = 0;
-    while (it1 != (*ask).end() && it2 != (*bid).end() ) {
-        std::cout  << std::fixed <<std::setprecision(2) << "ASK " << it1->second << ", " << it1->first << " | ";
+    while (it1 != (*ask).end() && it2 != (*bid).end()  && count < 50) {
+        std::cout  << std::fixed <<std::setprecision(2) << "BID " << it1->second << ", " << it1->first << " | ";
 
-        std::cout << std::fixed << std::setprecision(2) << it2->first << " , " << it2->second << " BID" << std::endl;
+        std::cout << std::fixed << std::setprecision(2) << it2->first << " , " << it2->second << " ASK" << std::endl;
         count++;
         ++it1;
         ++it2;
