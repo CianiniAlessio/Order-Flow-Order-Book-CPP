@@ -6,7 +6,6 @@
 #include <string>
 #include <chrono>
 #include <iostream>
-#include <boost/stacktrace.hpp>
 
 class Logger {
 public:
@@ -19,4 +18,3 @@ private:
 };
 
 #endif
- 

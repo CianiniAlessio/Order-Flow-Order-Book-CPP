@@ -7,7 +7,7 @@
 
 class ThreadSafeQueue {
 private:
-    std::queue<std::string> m_queue;
+    std::queue<std::string>* m_queue = new std::queue<std::string>;
     std::mutex m_mutex;
 
 public:
@@ -19,4 +19,4 @@ public:
     size_t size();
 };
 
-#endif 
+#endif
