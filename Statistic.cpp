@@ -3,7 +3,9 @@
 
 double Statistic::cumulative_distribution_function(double& x, double mu, double sigma) 
 {
-    return 0.5 *(1 + std::erf((x-mu)/ (sqrt(2)*sigma)));
+    x = (x - mu) / sigma;
+    auto cd = 0.5 * std::erfc((-x*sqrt(2)));
+    return cd;
 }
 
 double Statistic::calculate_mean(const std::vector<double>& vector, int& window_size, int& second_window) {
@@ -25,6 +27,7 @@ double Statistic::calculate_stddev(const std::vector<double>& vector, int& windo
 {
     double sum_sq = 0.0;
     int n = vector.size();
+
 
     // Compute the starting index for the last window
     int start_index = std::max(n - window_size - second_window, 0);

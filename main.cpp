@@ -74,7 +74,6 @@ void set_price_quantity_orderBook(std::map<double, double>& ask, std::map<double
             else {
                 ask[price] = quantity;
             }
-
         }
         else if (side == "b") {
             if (quantity == 0) {
@@ -110,7 +109,7 @@ std::vector<std::string> splitLine(const std::string& line, char delimiter)
 
 void processFilesTR(ThreadSafeQueue& Trades_queue)
 {
-    std::fstream* trade = new std::fstream("C:\\Users\\Administrator\\TR_20210512.csv");
+    std::fstream* trade = new std::fstream("C:\\Users\\Administrator\\TR_20210519.csv");
     std::string line;
 
     my_log.writeToLog("[THREAD 1] Starting");
@@ -121,6 +120,7 @@ void processFilesTR(ThreadSafeQueue& Trades_queue)
     }
     cv.notify_all();
     my_log.writeToLog("[THREAD 1] Notified All");
+
     while (trade->good())
     {
         std::getline(*trade, line);
@@ -142,7 +142,7 @@ void processFilesTR(ThreadSafeQueue& Trades_queue)
 
 void processFilesOB(ThreadSafeQueue& Orderbook_queue)
 {
-    std::fstream* quotes = new std::fstream("C:\\Users\\Administrator\\OB_20210512.csv");
+    std::fstream* quotes = new std::fstream("C:\\Users\\Administrator\\OB_20210519.csv");
     std::string line;
     int counter = 0;
     my_log.writeToLog("[THREAD 2] Starting");
@@ -153,6 +153,7 @@ void processFilesOB(ThreadSafeQueue& Orderbook_queue)
     }
     cv.notify_all();
     my_log.writeToLog("[THREAD 2] Notified All");
+    std::getline(*quotes, line);
     while (quotes->good())
     {
         std::getline(*quotes, line);
@@ -170,7 +171,7 @@ void processFilesOB(ThreadSafeQueue& Orderbook_queue)
     }
 
     my_log.writeToLog("[THREAD 2] RED ORDER BOOK");
-    my_log.writeToLog("[THREAD 2] " + std::to_string(numberPush));
+    my_log.writeToLog("[THREAD 2] LINES IN ORDERBOOK: " + std::to_string(numberPush));
     delete quotes;
 
 }
@@ -200,10 +201,8 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
             if (executed.size() == SIZE_OF_TRADES) // but i have an executed
             {
                 updated = _vpin.update(executed);
-                if (updated)
-                {
-                    if (updated) vpin_results.push_back(_vpin.get_both_cdf_vpin());
-                }
+                
+                if (updated) vpin_results.push_back(_vpin.get_both_cdf_vpin());
                 Trades_queue.pop();
             }
             else {
@@ -241,7 +240,7 @@ void readFromQueues(std::map<double, double>& ask, std::map<double, double, std:
 
 int main()
 {
-    VPIN _vpin(100, 100 , 0); 
+    VPIN _vpin(150,20,0,100); //ignore orderless than 100
     std::unique_ptr <std::vector<std::vector<double>>> vpin_results = std::make_unique<std::vector<std::vector<double>>>();
     std::unique_ptr<ThreadSafeQueue> Orderbook_queue = std::make_unique<ThreadSafeQueue>();
     std::unique_ptr<ThreadSafeQueue> Trades_queue = std::make_unique<ThreadSafeQueue>();
@@ -283,7 +282,7 @@ int main()
     }*/
     std::cout << " Printing vpin " << std::endl;
     int c = 0;
-    /*while (vpin_it != vpin_results->end())
+    while (vpin_it != vpin_results->end())
     {
         std::cout << c++;
         for (auto& elem : *vpin_it)
@@ -292,15 +291,25 @@ int main()
         }
         std::cout << std::endl;
         vpin_it++;
-    }*/
-    std::ofstream outputFile("cdf.csv");
+    }
+    std::ofstream outputFileCdf("cdf.csv");
     std::cout << _vpin.get_cdfs().size() << std::endl;
     for (auto& element :_vpin.get_cdfs()) {
-        outputFile << element;
-        outputFile << ",";
+        outputFileCdf << element;
+        outputFileCdf << ",";
     }
     // Close the output file
-    outputFile.close();
+    outputFileCdf.close();
+
+    std::ofstream outputFileVpin("vpin.csv");
+    std::cout << _vpin.get_cdfs().size() << std::endl;
+    for (auto& element : _vpin.get_vpins()) {
+        outputFileVpin << element;
+        outputFileVpin << ",";
+    }
+    // Close the output file
+    outputFileVpin.close();
+
     return 0;
 
 
