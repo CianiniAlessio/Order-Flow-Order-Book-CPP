@@ -26,7 +26,7 @@
 Logger my_log;
 std::mutex m;
 std::condition_variable cv;
-bool ready1 = false, ready2 = false;
+volatile bool ready1 = false, ready2 = false;
 
 // i pass the set of the level as if it was an order and return the quantity not filled and put it in the book
 void manage_trade_in_orderBook(std::map<double, double>& ask_map, std::map<double, double, std::greater<double>>& bid_map, double& price, double& qty, std::string side) {
