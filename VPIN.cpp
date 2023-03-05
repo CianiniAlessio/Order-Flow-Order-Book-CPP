@@ -67,6 +67,12 @@
 
 			//prices_deltas
 			_bucket.prices_buckets.push_back(_bucket.averaged_price);
+			
+			
+			// behaviour like a queue like this, TO CHECK 
+//			if(_bucket.prices_buckets.size() > _bucket.window_size) _bucket.prices_buckets.erase(_bucket.prices_buckets.begin());
+
+			
 			if(_bucket.prices_buckets.size() > 1)_bucket.prices_deltas.push_back(_bucket.averaged_price - _bucket.prices_buckets[_bucket.prices_buckets.size()-2]);
 			_bucket.update_volume_imbalance();		
 
